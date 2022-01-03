@@ -6,9 +6,9 @@
 // @namespace    https://github.com/TalkLounge/tellonym.me-guest
 // @license      MIT
 // @match        https://tellonym.me/*
-// @require      https://cdn.jsdelivr.net/npm/jquery/dist/jquery.slim.min.js
-// @require      https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js
-// @require      https://cdn.jsdelivr.net/npm/luxon/build/global/luxon.min.js
+// @require      https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.slim.min.js
+// @require      https://cdn.jsdelivr.net/npm/axios@0.24.0/dist/axios.min.js
+// @require      https://cdn.jsdelivr.net/npm/luxon@2.3.0/build/global/luxon.min.js
 // @grant        none
 // ==/UserScript==
 
