@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            Tellonym.me Guest
 // @name:de         Tellonym.me Gast
-// @version         1.0.1
+// @version         1.0.2
 // @description     Load tellonym.me Tells without Login
 // @description:de  Lade tellonym.me Tells ohne Anmeldung
 // @author          TalkLounge (https://github.com/TalkLounge)
@@ -63,7 +63,7 @@
     }
 
     async function scroll() {
-        if (ul.find(":nth-last-child(10)")[0].getBoundingClientRect().top <= document.body.clientHeight) { // Load more tells when scrolled down
+        if (ul.find(":nth-last-child(10)") && ul.find(":nth-last-child(10)")[0].getBoundingClientRect().top <= document.body.clientHeight) { // Load more tells when scrolled down
             pos += 25;
             if (await loadTells()) { // End of tells reached
                 isProfilePage = false;
@@ -87,7 +87,7 @@
 
         lastUrl = window.location.href;
 
-        var localUl = $("img[alt=avatar]").eq(2).parent().parent().parent().parent().parent().parent().parent().parent();
+        var localUl = ($("img[alt=avatar]").length ? $("img[alt=avatar]") : $("svg[data-radium=true]")).eq(2).parent().parent().parent().parent().parent().parent().parent().parent();
         const localLi = localUl.children().eq(1);
 
         if (!localLi.length) { // Page not loaded completely
@@ -117,5 +117,5 @@
         } catch(e) {}
     }
 
-    window.setInterval(init, 500);
+    window.setInterval(init, 1000);
 })();
