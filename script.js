@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            Tellonym.me Guest
 // @name:de         Tellonym.me Gast
-// @version         1.0.2
+// @version         1.0.3
 // @description     Load tellonym.me Tells without Login
 // @description:de  Lade tellonym.me Tells ohne Anmeldung
 // @author          TalkLounge (https://github.com/TalkLounge)
@@ -16,14 +16,15 @@
 
 (function () {
     'use strict';
-    var lastUrl;
-    var counter;
-    var isProfilePage;
-    var isProfilePageLoaded;
-    var user;
-    var pos;
-    var ul;
-    var li;
+    let lastUrl;
+    let counter;
+    let isProfilePage;
+    let isProfilePageLoaded;
+    let scrollLoading;
+    let user;
+    let pos;
+    let ul;
+    let li;
 
     async function loadTells() {
         const data = await axios.get(`https://api.tellonym.me/profiles/name/${user}?limit=25&pos=${pos}`);
@@ -32,24 +33,41 @@
             return true;
         }
 
-        for (var i = 0; i < answers.length; i++) {
+        for (let i = 0; i < answers.length; i++) {
             if (answers[i].type == "AD") { // Do not display ads
                 continue;
             }
 
-            var $html = $(li.prop("outerHTML"));
-            $html.find("span[italic=false]").remove(); // Remove asked user
+            let $html = $(li.prop("outerHTML"));
             $html.find("span").eq(0).text(answers[i].tell); // Question
             $html.find("span").eq(1).text(answers[i].answer); // Answer
             $html.find("[italic='false']").parent().parent().children().eq(1).text(luxon.DateTime.fromISO(answers[i].createdAt).toRelative()); // Time
 
-            if (!$html.find("div[data-radium=true]").last().find("svg").length) { // Likes
-                $html.find("div[data-radium=true]").last().text(answers[i].likesCount); // Set likes when in template
-            } else if (answers[i].likesCount) {
-                $html.find("div[data-radium=true]").last().parent().append($("<div>").text(answers[i].likesCount).css("padding-left", "5px").css("font-size", "14px")); // Set likes when was liked
+            $html.find("span").eq(0).parent().parent().children().eq(1).remove(); // Remove show more
+            $html.find("span").eq(1).parent().parent().children().eq(1).remove();
+
+            const questionParent = $html.find("span").eq(0).parent().parent().parent().parent().parent();
+            questionParent.css("padding-top", "12px"); // Set consistent spacing
+            questionParent.css("padding-bottom", "12px");
+
+            if (questionParent.children().length == 2) { // Remove badge
+                questionParent.children().eq(0).remove();
             }
 
-            for (var j = 0; j < answers[i].media.length; j++) { // Media
+            questionParent.children().eq(0).css("margin-top", ""); // Set consistent spacing
+            questionParent.children().eq(0).css("margin-bottom", "");
+
+            if (answers[i].parent) { // Badge
+                questionParent.prepend($("<div>").css("width", "max-content").css("margin-bottom", "6px").css("padding", "2px 10px").css("background-color", "rgb(243, 243, 243)").css("border-radius", "10px").append($("<div>").css("max-width", "714px").css("font-size", "12px").text(answers[i].parent.content)));
+            }
+
+            if (answers[i].likesCount) { // Do not shown 0 likes
+                let likeDiv = $html.find("img").eq(-3).parent();
+                likeDiv.css("margin-top", "10px");
+                likeDiv.append($("<div>").text(answers[i].likesCount).css("margin-top", "4px").css("color", "gray"));
+            }
+
+            for (let j = 0; j < answers[i].media.length; j++) { // Media
                 if (answers[i].media[j].type != 0) { // Only Pictures
                     continue;
                 }
@@ -63,11 +81,13 @@
     }
 
     async function scroll() {
-        if (ul.find(":nth-last-child(10)") && ul.find(":nth-last-child(10)")[0].getBoundingClientRect().top <= document.body.clientHeight) { // Load more tells when scrolled down
+        if (ul.find(":nth-last-child(10)") && ul.find(":nth-last-child(10)")[0].getBoundingClientRect().top <= document.body.clientHeight && ! scrollLoading) { // Load more tells when scrolled down
             pos += 25;
+            scrollLoading = true;
             if (await loadTells()) { // End of tells reached
                 isProfilePage = false;
             }
+            scrollLoading = false;
         }
     }
 
@@ -80,14 +100,19 @@
 
         if (!isProfilePage) { // Page is no profile page
             return;
-        } else if (isProfilePageLoaded) { // Page is profile page, load more tells when scrolled down
+        } else if (lastUrl && isProfilePageLoaded) { // Page is profile page, load more tells when scrolled down
             scroll();
             return;
         }
 
         lastUrl = window.location.href;
 
-        var localUl = ($("img[alt=avatar]").length ? $("img[alt=avatar]") : $("svg[data-radium=true]")).eq(2).parent().parent().parent().parent().parent().parent().parent().parent();
+        if (lastUrl.includes("/answer/")) { // Do not run on https://tellonym.me/USER/answer/1234
+            isProfilePage = false;
+            return;
+        }
+
+        let localUl = ($("img[resizemode=stretch]").length ? $("img[resizemode=stretch]") : $("svg[height=38]").parent()).parent().parent().parent().parent().parent().parent().parent();
         const localLi = localUl.children().eq(1);
 
         if (!localLi.length) { // Page not loaded completely
@@ -101,7 +126,7 @@
         isProfilePageLoaded = true;
 
         try { // Remove preview tells
-            for (var j = 1; j <= 10; j++) {
+            for (let i = 1; i <= 10; i++) {
                 localUl.children().eq(1).remove();
             }
         } catch(e) {}
